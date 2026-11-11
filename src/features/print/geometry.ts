@@ -1,3 +1,5 @@
+import { validateAdjustments, type PhotoAdjustments } from "./photo-adjustments";
+
 export type SizeMm = { widthMm: number; heightMm: number };
 export type PointMm = { xMm: number; yMm: number };
 export type RectMm = PointMm & SizeMm;
@@ -261,5 +263,4 @@ function fitPrintsToOneSheet(settings: PrintSettings, lines: PhotoLine[]): Print
   }
   return { ...best, scale: low };
 }
-import { validateAdjustments, type PhotoAdjustments } from "./photo-adjustments";
 

@@ -78,6 +78,10 @@ For a mixed sheet, upload a photo and choose its print size in the photo list. U
 
 To reduce a job to one sheet, enable **Fit all prints to one sheet** under the sheet settings. The app uses one scale for every photo, keeps the chosen margins and gaps, and shows the resulting printed dimensions under each entry. Sixteen 2×2 prints on A4 with a 5 mm margin and 3 mm gap become 47.75 × 47.75 mm each. Turn the option off to restore the selected physical sizes and regular pagination.
 
+Use the sliders button beside a photo to edit brightness and contrast. The dialog previews changes, can show the original for comparison, and has Reset, Cancel, and Apply edits controls. Applied settings affect that entry and all its copies. Other entries retain their own settings.
+
+Adjustment values are optional document metadata, with zero as the neutral default. Preview filters and export use the same brightness-then-contrast transformation. Edited exports process the normalized source at its full pixel dimensions and encode a lossless PNG. The PDF cache keys include the source ID and both adjustment values so differently edited copies stay independent. Original source blobs remain available for resetting.
+
 ### Prerequisites
 
 - Recent supported Node.js (Next.js documentation lists **20.9+ minimum**; use a maintained LTS compatible with your chosen packages).

@@ -67,6 +67,7 @@ Targets are acceptance criteria, not measured performance claims. Establish benc
 - Paper definitions: A4, Letter, Legal, 4R, with portrait/landscape where applicable.
 - PNG/JPEG image upload, orientation normalization, file validation, thumbnail, source metadata.
 - Upload multiple images; per-image quantity; exact-dimension crop; basic image reordering.
+- Per-entry brightness and contrast with live preview, original comparison, reset, and full-resolution PDF output.
 - Uniform and mixed-size auto-layout with deterministic pagination, explicit margins and gaps.
 - Optional **Fit all prints to one sheet**, with proportional size reduction and visible printed dimensions.
 - Canvas preview with select, move, resize, rotate, duplicate, delete; numeric inspector.
@@ -80,7 +81,7 @@ Targets are acceptance criteria, not measured performance claims. Establish benc
 - Layer stack with locking, visibility, z-order, multi-select, grouping.
 - Snapping, alignment/distribution, guides, rulers, keyboard shortcuts.
 - Template creation, template versioning, custom page dimensions, customizable frames.
-- Better cropping, image rotate/flip, brightness/contrast, bleed settings.
+- Better cropping, image rotate/flip, additional photo effects, bleed settings.
 - IndexedDB autosave and portable project ZIP containing JSON + original image assets.
 
 ### Release 0.3 — Rich print scenarios

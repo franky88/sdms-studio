@@ -99,6 +99,7 @@ The local Quick Print build covers the upload, crop, quantity, preview, and PDF 
 - [ ] **QCK-007 [P0][UI] Export dialog** (1d). PDF filename, print instructions, DPI warnings, download. **AC:** successful download with accurate page count and no blocking console errors. **Depends:** EXP-004, EXP-006
 - [ ] **QCK-008 [P1][UI] Preset quick actions** (0.5d). Recent paper/settings, copy count buttons, reset. **AC:** changes are reversible and do not silently change units. **Depends:** QCK-005
 - [ ] **QCK-009 [P0][TEST] End-to-end Quick Print happy path** (1d). Upload two fixtures, adjust copies, crop, export, read back PDF. **AC:** resulting total item count and page dimensions match inputs. **Depends:** QCK-001–007
+- [x] **QCK-010 [P1][UI][PRINT] Brightness and contrast**. Add independent controls per print entry with live preview, Show original, Reset, Cancel, and Apply edits. **AC:** preview, crop view, and PDF carry the same adjustments; originals remain available; edited PDF images retain their source pixel dimensions; repeated copies reuse the matching edited variant. **Depends:** EXP-002, EXP-003
 
 **M2 gate:** QCK-001–007 and QCK-009 complete. Demo at a counter using actual sample pictures.
 
@@ -159,7 +160,7 @@ The local Quick Print build covers the upload, crop, quantity, preview, and PDF 
 - [ ] **ADV-005 [P1][CANVAS] Multi-select and group** (2–3d). Group/ungroup transforms, selection marquee. **AC:** groups preserve individual geometry through export and reload. **Depends:** ADV-004
 - [ ] **ADV-006 [P1][UI] Template builder** (2–4d). Save project as editable template, expose size/margin/photo-frame slots, version. **AC:** template reapplication does not copy user photos or orphan assets. **Depends:** DOM-004, PER-003, ADV-004
 - [ ] **ADV-007 [P1][UI] Custom paper & rulers** (1–2d). Measured canvas, page guides, 1 mm numeric precision. **AC:** custom paper round-trips through PDF and project. **Depends:** EDT-002
-- [ ] **ADV-008 [P2][CANVAS] Photo effects** (2–4d). Brightness, contrast, grayscale, rotate/flip; export parity. **AC:** documented raster fallback remains high-resolution. **Depends:** EXP-003
+- [ ] **ADV-008 [P2][CANVAS] Additional photo effects** (2–4d). Grayscale and image rotate/flip with export parity. Brightness and contrast shipped early under QCK-010. **AC:** documented raster fallback remains high-resolution. **Depends:** EXP-003
 - [ ] **ADV-009 [P2][UI] Sticker and photobooth presets** (2d). Circle/rectangle stickers, label sheets, photo strips, collage. **AC:** layouts fit page and reproduce exports. **Depends:** ADV-001, ADV-006
 - [x] **ADV-010 [P2][PRINT] Mixed-size rectangle packing** (2–4d). Deterministic multi-size jobs and user-selected frame orientation. Implemented early for mixed Quick Print jobs. **AC:** never overlaps items or shrinks dimensions silently; unfinished items paginate. **Depends:** LAY-002
 - [ ] **ADV-011 [P1][TEST] Advanced regression suite** (2d). Font/vector/crop/history/template golden PDF tests. **AC:** each newly supported element has preview/export and save/reload coverage. **Depends:** ADV-001–010 as implemented
