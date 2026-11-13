@@ -186,4 +186,22 @@ describe("Local project repository", () => {
     await repo.close();
     expect(await repo.listPackages()).toEqual([{ ...builtinIdPackages[0], id: "custom", name: "School set" }]);
   });
+
+  it("deletes only the selected custom package durably and frees its name", async () => {
+    const repo = repository();
+    const retained = { ...builtinIdPackages[1], id: "retained", name: "Staff set" };
+    await repo.savePackage({ ...builtinIdPackages[0], id: "removed", name: "School set" });
+    await repo.savePackage(retained);
+    await repo.saveProject("project", 0, job(), new Map([[source.id, source]]));
+    await repo.deletePackage("removed");
+    await repo.close();
+    expect(await repo.listPackages()).toEqual([retained]);
+    expect((await repo.loadProject("project"))?.job).toEqual(job());
+    await repo.savePackage({ ...builtinIdPackages[2], id: "replacement", name: "School set" });
+    expect(await repo.listPackages()).toHaveLength(2);
+    await repo.deletePackage("removed");
+    expect(await repo.listPackages()).toHaveLength(2);
+    await expect(repo.deletePackage(builtinIdPackages[0].id)).rejects.toThrow("Built-in");
+    expect(await repo.listPackages()).toHaveLength(2);
+  });
 });

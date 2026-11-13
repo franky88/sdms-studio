@@ -225,6 +225,11 @@ export function useStudio(busy: boolean) {
     setCustomPackages((current) => [...current, definition]);
   }
 
+  async function deletePackage(id: string) {
+    await projectRepository.deletePackage(id);
+    setCustomPackages((current) => current.filter((definition) => definition.id !== id));
+  }
+
   async function refreshProjects() {
     try { setProjects(await projectRepository.listProjects()); }
     catch (error) { setSaveError(messageFor(error)); }
@@ -234,7 +239,7 @@ export function useStudio(busy: boolean) {
     job: history.present, assets, changeJob, endGroup, undo, redo,
     canUndo: history.past.length > 0, canRedo: history.future.length > 0,
     ready, transitioning, saving, saveError, dirty: history.present !== savedJob,
-    activeId, projects, customPackages, addImportedPhotos, switchProject, saveCopy, savePackage, refreshProjects,
+    activeId, projects, customPackages, addImportedPhotos, switchProject, saveCopy, savePackage, deletePackage, refreshProjects,
     saveNow: () => { void flush(true).catch(() => undefined); },
   };
 }

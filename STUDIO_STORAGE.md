@@ -18,6 +18,8 @@ Built-in combinations are four 2×2 plus eight 1×1, six 2×2, and fifteen 1×1.
 
 To save a custom combination, set one photo's ID sizes and quantities, open **Save your own combination**, enter a name, and press **Save ID set**. Custom packages store sizes and counts only, with no customer photo, filename, crop or effects. Package names are unique regardless of case.
 
+Use the trash icon on a custom package and confirm **Delete package** to remove it from this browser. Cancel keeps the package. Deleting a saved combination does not change photos already arranged in a project. Built-in packages remain available. A deleted name can be reused.
+
 ## IndexedDB version 1
 
 Database: `sdms-print-studio`.

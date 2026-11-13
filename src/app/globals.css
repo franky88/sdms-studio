@@ -100,7 +100,18 @@ a { color: inherit; text-decoration: none; }
 .package-heading h3 { flex: 1; margin: 0; font-size: 13px; font-weight: 700; }
 .package-heading > span { color: #805071; background: #f8edf4; border-radius: 5px; padding: 3px 5px; font-size: 8px; font-weight: 750; letter-spacing: .06em; }
 .package-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 10px; }
-.package-card { display: grid; align-content: start; gap: 4px; padding: 10px 8px; text-align: left; background: #fef9fc; border: 1px solid #eddde8; border-radius: 10px; }
+.package-tile { position: relative; min-width: 0; }
+.package-card { display: grid; width: 100%; height: 100%; align-content: start; gap: 4px; padding: 10px 8px; text-align: left; background: #fef9fc; border: 1px solid #eddde8; border-radius: 10px; }
+.package-tile.is-custom .package-card strong { padding-right: 23px; }
+.package-delete { position: absolute; top: 5px; right: 5px; width: 23px; height: 23px; border-radius: 6px; color: #8d2438; }
+.package-delete:not(:disabled):hover { background: #fff0f3; border-color: #dda8b2; }
+.package-delete-confirm { margin-top: 10px; padding: 10px; border: 1px solid #edccd4; border-radius: 10px; background: #fff7f8; }
+.package-delete-confirm p { margin: 0 0 9px; font-size: 12px; overflow-wrap: anywhere; }
+.package-delete-confirm > div { display: flex; justify-content: flex-end; gap: 7px; }
+.package-delete-confirm .button { min-height: 32px; padding: 5px 11px; font-size: 12px; }
+.danger { color: white; background: #a3203a; }
+.danger:not(:disabled):hover { background: #841a2f; }
+.danger:disabled { opacity: .6; }
 .package-card:not(:disabled):hover { background: #f8eaf3; border-color: #c884ac; }
 .package-card strong { font-size: 12px; overflow-wrap: anywhere; }
 .package-card span { font-size: 10px; color: #6b5263; }

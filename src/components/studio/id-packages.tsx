@@ -1,20 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { Package, Plus } from "lucide-react";
+import { useRef, useState } from "react";
+import { Package, Plus, Trash2 } from "lucide-react";
 import { applyIdPackage, builtinIdPackages, type IdPackage } from "@/features/studio/id-packages";
 import { photoPresets } from "@/features/print/presets";
 import type { StudioJob } from "@/features/studio/job";
 
-export function IdPackages({ job, customPackages, onApply, onSave }: {
+export function IdPackages({ job, customPackages, onApply, onSave, onDelete }: {
   job: StudioJob;
   customPackages: IdPackage[];
   onApply: (job: StudioJob) => void;
   onSave: (assetId: string, name: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }) {
   const [selected, setSelected] = useState("");
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<IdPackage>();
+  const [deleting, setDeleting] = useState(false);
+  const deleteTrigger = useRef<HTMLButtonElement>(null);
+  const working = saving || deleting;
   const [notice, setNotice] = useState<{ text: string; error?: boolean }>();
   const sources = [...new Map(job.entries.map((entry) => [entry.assetId, entry])).values()];
   const assetId = sources.some((entry) => entry.assetId === selected) ? selected : sources[0]?.assetId ?? "";
@@ -29,7 +34,7 @@ export function IdPackages({ job, customPackages, onApply, onSave }: {
   }
 
   async function save() {
-    if (saving) return;
+    if (working) return;
     setSaving(true);
     try {
       await onSave(assetId, name);
@@ -38,6 +43,18 @@ export function IdPackages({ job, customPackages, onApply, onSave }: {
     } catch (error) {
       setNotice({ text: error instanceof Error ? error.message : "Couldn’t save this package.", error: true });
     } finally { setSaving(false); }
+  }
+
+  async function remove() {
+    if (!pendingDelete || working) return;
+    setDeleting(true);
+    try {
+      await onDelete(pendingDelete.id);
+      setPendingDelete(undefined);
+      setNotice({ text: "Package deleted." });
+    } catch (error) {
+      setNotice({ text: error instanceof Error ? error.message : "Couldn’t delete this package. Please retry.", error: true });
+    } finally { setDeleting(false); }
   }
 
   return (
@@ -49,12 +66,27 @@ export function IdPackages({ job, customPackages, onApply, onSave }: {
         </select>
       </label>}
       <div className="package-grid">
-        {[...builtinIdPackages, ...customPackages].map((definition) => <button type="button" className="package-card" key={definition.id}
-          disabled={!assetId || saving} onClick={() => apply(definition)}>
-          <strong>{definition.name}</strong>
-          <span>{definition.items.map((item) => `${item.copies} × ${photoPresets.find((p) => p.id === item.presetId)?.label}`).join(" + ")}</span>
-        </button>)}
+        {[...builtinIdPackages, ...customPackages].map((definition) => {
+          const custom = customPackages.some((item) => item.id === definition.id);
+          return <div className={`package-tile${custom ? " is-custom" : ""}`} key={definition.id}>
+            <button type="button" className="package-card" disabled={!assetId || working} onClick={() => apply(definition)}>
+              <strong>{definition.name}</strong>
+              <span>{definition.items.map((item) => `${item.copies} × ${photoPresets.find((p) => p.id === item.presetId)?.label}`).join(" + ")}</span>
+            </button>
+            {custom && <button type="button" className="icon-button package-delete" aria-label={`Delete package ${definition.name}`}
+              title={`Delete ${definition.name}`} disabled={working} onClick={(event) => { deleteTrigger.current = event.currentTarget; setPendingDelete(definition); setNotice(undefined); }}>
+              <Trash2 size={13} aria-hidden />
+            </button>}
+          </div>;
+        })}
       </div>
+      {pendingDelete && <div className="package-delete-confirm" role="group" aria-label={`Delete package ${pendingDelete.name}?`}>
+        <p>Delete “{pendingDelete.name}”? This removes the saved combination from this browser.</p>
+        <div>
+          <button type="button" className="button secondary" autoFocus disabled={working} onClick={() => { setPendingDelete(undefined); deleteTrigger.current?.focus(); }}>Cancel</button>
+          <button type="button" className="button danger" disabled={working} onClick={() => { void remove(); }}>{deleting ? "Deleting…" : "Delete package"}</button>
+        </div>
+      </div>}
       <p className="step-note">{assetId ? "Replaces this photo’s print entries using exact ID sizes." : "Add a photo above, then choose a package."}</p>
       <details className="custom-package">
         <summary>Save your own combination</summary>
@@ -62,7 +94,7 @@ export function IdPackages({ job, customPackages, onApply, onSave }: {
         <div className="custom-package-form">
           <label className="field"><span>Package name</span><input maxLength={60} placeholder="e.g. School ID set" value={name}
             onChange={(event) => setName(event.target.value)} /></label>
-          <button className="button secondary" type="button" disabled={!assetId || !name.trim() || saving} onClick={() => { void save(); }}>
+          <button className="button secondary" type="button" disabled={!assetId || !name.trim() || working} onClick={() => { void save(); }}>
             <Plus size={15} /> {saving ? "Saving…" : "Save ID set"}
           </button>
         </div>

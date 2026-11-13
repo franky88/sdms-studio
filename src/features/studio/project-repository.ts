@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import { validateIdPackage, type IdPackage } from "./id-packages";
+import { builtinIdPackages, validateIdPackage, type IdPackage } from "./id-packages";
 import { validateStudioJob, type StudioAsset, type StudioJob } from "./job";
 import { maxImagePixels } from "../print/import-photo";
 
@@ -141,6 +141,13 @@ export function createProjectRepository(name = "sdms-print-studio") {
         }
         throw error;
       }
+    },
+    async deletePackage(id: string) {
+      if (builtinIdPackages.some((definition) => definition.id === id)) {
+        throw new Error("Built-in ID packages cannot be deleted.");
+      }
+      const db = await database();
+      await db.delete("packages", id);
     },
     async close() {
       (await connection)?.close();

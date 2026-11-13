@@ -367,7 +367,7 @@ export function QuickPrint() {
           )}
           {photos.length > 0 && <p className="step-note">Use + to print the same photo in another size.</p>}
           <p className="step-note"><LockKeyhole size={13} aria-hidden /> Photos stay in this browser.</p>
-          <IdPackages key={studio.activeId} job={job} customPackages={studio.customPackages} onSave={studio.savePackage}
+          <IdPackages key={studio.activeId} job={job} customPackages={studio.customPackages} onSave={studio.savePackage} onDelete={studio.deletePackage}
             onApply={(next) => { changeJob(() => next); setRequestedPage(0); setExportStatus(undefined); }} />
         </Step>
 
