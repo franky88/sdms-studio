@@ -100,6 +100,8 @@ The local Quick Print build covers the upload, crop, quantity, preview, and PDF 
 - [ ] **QCK-008 [P1][UI] Preset quick actions** (0.5d). Recent paper/settings, copy count buttons, reset. **AC:** changes are reversible and do not silently change units. **Depends:** QCK-005
 - [ ] **QCK-009 [P0][TEST] End-to-end Quick Print happy path** (1d). Upload two fixtures, adjust copies, crop, export, read back PDF. **AC:** resulting total item count and page dimensions match inputs. **Depends:** QCK-001–007
 - [x] **QCK-010 [P1][UI][PRINT] Brightness and contrast**. Add independent controls per print entry with live preview, Show original, Reset, Cancel, and Apply edits. **AC:** preview, crop view, and PDF carry the same adjustments; originals remain available; edited PDF images retain their source pixel dimensions; repeated copies reuse the matching edited variant. **Depends:** EXP-002, EXP-003
+- [x] **QCK-011 [P1][DATA][UI] Quick Print undo/redo**. Fifty metadata-only history steps; uploads, packages, crop/edit Apply, remove, reorder and sheet settings are reversible. Numeric typing groups until blur. Ctrl/⌘ Z, Ctrl Y and Ctrl/⌘ Shift Z respect text fields and dialogs. Original assets remain available while referenced by history. Advanced canvas gestures remain under EDT-008.
+- [x] **QCK-012 [P1][UI][DATA] One-click ID packages**. Mixed 4×2×2 + 8×1×1, six 2×2 and fifteen 1×1; select a source photo, replace its print entries atomically at exact sizes, and save custom ID size/quantity combinations without photos. Custom packages persist across jobs.
 
 **M2 gate:** QCK-001–007 and QCK-009 complete. Demo at a counter using actual sample pictures.
 
@@ -130,8 +132,8 @@ The local Quick Print build covers the upload, crop, quantity, preview, and PDF 
 
 ### Epic PER — Persistence
 
-- [ ] **PER-001 [P0][DATA] IndexedDB schema** (1d). Stores for projects, asset blobs, thumbnails, version metadata. **AC:** browser reload restores projects and original pixels. **Depends:** AST-003, DOM-002
-- [ ] **PER-002 [P0][DATA] Autosave and conflict handling** (1d). Debounced writes, saved indicator, version key, quota/errors. **AC:** no lost edit after reload with autosave complete; storage failure clearly reported. **Depends:** PER-001, EDT-007
+- [x] **PER-001 [P0][DATA] IndexedDB schema**. Versioned Quick Print jobs, original asset blobs, thumbnails, active-project preference and reusable ID packages. Reload restores the last saved job and original pixels. See `STUDIO_STORAGE.md`. Advanced canvas data will extend this schema.
+- [x] **PER-002 [P0][DATA] Autosave and conflict handling**. Debounced, serialized atomic saves; saved/unsaved/error status; revision conflicts prevent stale-tab overwrites; quota failures retain the current workspace. New, Projects, Save and Save copy are available. Unit tests cover round trips, conflicts and failed-save rollback; browser checks cover reload, project switching, copies and export.
 - [ ] **PER-003 [P0][DATA] Portable project import/export** (1–2d). Manifest JSON plus original assets in `.sdms.zip`; guard path traversal and unsafe files. **AC:** zip exported on computer A imports on B with no broken images. **Depends:** PER-001, DOM-005
 - [ ] **PER-004 [P1][DATA] Local storage management UI** (0.5d). Delete project and orphan assets, show project sizes. **AC:** delete requires confirmation and releases binary assets. **Depends:** PER-001
 

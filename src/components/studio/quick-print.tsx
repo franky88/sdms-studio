@@ -4,17 +4,20 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Crop, FileImage, ImagePlus, LockKeyhole, Plus, RotateCw, Scissors, Shrink, SlidersHorizontal, TriangleAlert, X } from "lucide-react";
 import {
   buildPrintDocument, effectiveDpi, gridFor, initialCrop, maxCopiesPerPhoto, maxLineItems, sourceCrop,
-  type PhotoLine, type PrintSettings, type SizeMm,
+  type PrintSettings,
 } from "@/features/print/geometry";
 import { importPhoto, maxFiles, maxJobPixels } from "@/features/print/import-photo";
 import { paperPresets, photoPresets, photoPresetGroups, popularPhotoPresets, type PhotoPresetId } from "@/features/print/presets";
-import type { PrintAsset } from "@/features/print/export-pdf";
+import { useStudio } from "@/features/studio/use-studio";
+import type { AssetPreview, PhotoEntry, StudioAsset, StudioJob } from "@/features/studio/job";
 import { CropDialog } from "./crop-dialog";
 import { PhotoPreview } from "./photo-preview";
 import { PhotoEditDialog } from "./photo-edit-dialog";
 import { SheetPreview } from "./sheet-preview";
+import { ProjectToolbar } from "./project-toolbar";
+import { IdPackages } from "./id-packages";
 
-type Photo = PrintAsset & PhotoLine & { id: string; name: string; url: string; presetId: PhotoPresetId; photo: SizeMm };
+type Photo = AssetPreview & PhotoEntry;
 type PaperId = typeof paperPresets[number]["id"];
 
 function PhotoSizeOptions() {
@@ -44,18 +47,30 @@ const sizeFormat = new Intl.NumberFormat("en", { maximumSignificantDigits: 4 });
 const scaleFormat = new Intl.NumberFormat("en", { maximumSignificantDigits: 3 });
 
 export function QuickPrint() {
-  const [presetId, setPresetId] = useState<PhotoPresetId>("id-2x2");
-  const [paperId, setPaperId] = useState<PaperId>("a4");
-  const [landscape, setLandscape] = useState(false);
-  const [margin, setMargin] = useState("5");
-  const [gap, setGap] = useState("3");
-  const [cutMarks, setCutMarks] = useState(false);
-  const [fitToOneSheet, setFitToOneSheet] = useState(false);
-  const [photos, setPhotos] = useState<Photo[]>([]);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [exportStatus, setExportStatus] = useState<{ message: string; error?: boolean }>();
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const studio = useStudio(loadingPhotos || exporting);
+  const { job, changeJob, endGroup } = studio;
+  const { presetId, paperId, landscape, margin, gap, cutMarks, fitToOneSheet } = job;
+  const photos: Photo[] = useMemo(() => job.entries.flatMap((entry) => {
+    const source = studio.assets.get(entry.assetId);
+    return source ? [{ ...source, ...entry }] : [];
+  }), [job.entries, studio.assets]);
+  function setSetting<K extends keyof StudioJob>(key: K, value: StudioJob[K], group?: string) {
+    changeJob((current) => ({ ...current, [key]: value }), group);
+  }
+  const setPresetId = (value: PhotoPresetId) => setSetting("presetId", value);
+  const setPaperId = (value: PaperId) => setSetting("paperId", value);
+  const setLandscape = (value: boolean) => setSetting("landscape", value);
+  const setMargin = (value: string) => setSetting("margin", value, "margin");
+  const setGap = (value: string) => setSetting("gap", value, "gap");
+  const setCutMarks = (value: boolean) => setSetting("cutMarks", value);
+  const setFitToOneSheet = (value: boolean) => setSetting("fitToOneSheet", value);
+  function setPhotos(update: (entries: PhotoEntry[]) => PhotoEntry[], group?: string) {
+    changeJob((current) => ({ ...current, entries: update(current.entries) }), group);
+  }
   const [dragging, setDragging] = useState(false);
   const [cropId, setCropId] = useState<string>();
   const [editId, setEditId] = useState<string>();
@@ -64,15 +79,11 @@ export function QuickPrint() {
   const uploading = useRef(false);
   const mounted = useRef(false);
   const dragDepth = useRef(0);
-  const urls = useRef(new Set<string>());
 
   useEffect(() => {
     mounted.current = true;
-    const activeUrls = urls.current;
     return () => {
       mounted.current = false;
-      activeUrls.forEach((url) => URL.revokeObjectURL(url));
-      activeUrls.clear();
     };
   }, []);
 
@@ -87,7 +98,8 @@ export function QuickPrint() {
   const paper = settings.paper;
   const { document, layoutError, capacity } = useMemo(() => {
     try {
-      const document = buildPrintDocument(settings, photos);
+      if (photos.length !== job.entries.length) throw new Error("A source photo is missing. Reopen this project or add the photo again.");
+      const document = buildPrintDocument(settings, job.entries);
       const frame = photos[0]?.photo ?? preset;
       const scale = document.scale ?? 1;
       return {
@@ -102,7 +114,7 @@ export function QuickPrint() {
         capacity: 0,
       };
     }
-  }, [settings, photos, preset]);
+  }, [settings, photos, preset, job.entries]);
   const printScale = document?.scale ?? 1;
   const printScaleLabel = `${scaleFormat.format(printScale * 100)}%`;
 
@@ -129,7 +141,8 @@ export function QuickPrint() {
     setExportStatus(undefined);
     const slots = Math.min(maxFiles - previews.size, maxLineItems - photos.length);
     const errors: string[] = [];
-    const added: Photo[] = [];
+    const added: PhotoEntry[] = [];
+    const sources: StudioAsset[] = [];
     let availablePixels = maxJobPixels - [...previews.values()].reduce((sum, photo) => sum + photo.width * photo.height, 0);
     try {
       for (const file of files.slice(0, slots)) {
@@ -137,11 +150,10 @@ export function QuickPrint() {
           const { thumbnail, ...image } = await importPhoto(file, availablePixels);
           if (!mounted.current) return;
           const assetId = crypto.randomUUID();
-          const url = URL.createObjectURL(thumbnail);
-          urls.current.add(url);
           availablePixels -= image.width * image.height;
+          sources.push({ ...image, thumbnail, id: assetId });
           added.push({
-            ...image, assetId, id: crypto.randomUUID(), name: file.name, url, copies: 1,
+            width: image.width, height: image.height, assetId, id: crypto.randomUUID(), name: file.name, copies: 1,
             cropSettings: initialCrop, presetId, photo: { widthMm: preset.widthMm, heightMm: preset.heightMm },
           });
         } catch (error) {
@@ -149,7 +161,7 @@ export function QuickPrint() {
         }
       }
       if (files.length > slots) errors.push(`A job can hold up to ${maxFiles} source photos and ${maxLineItems} print entries.`);
-      setPhotos((current) => [...current, ...added]);
+      studio.addImportedPhotos(sources, added);
       setUploadErrors(errors);
     } finally {
       uploading.current = false;
@@ -159,10 +171,6 @@ export function QuickPrint() {
 
   function removePhoto(photo: Photo) {
     setPhotos((current) => current.filter((item) => item.id !== photo.id));
-    if (!photos.some((item) => item.id !== photo.id && item.assetId === photo.assetId)) {
-      URL.revokeObjectURL(photo.url);
-      urls.current.delete(photo.url);
-    }
   }
 
   function setPhotoSize(id: string, nextPresetId: PhotoPresetId) {
@@ -176,8 +184,9 @@ export function QuickPrint() {
 
   function addAnotherSize(photo: Photo) {
     const nextPreset = photo.presetId === "id-1x1" ? photoPresets[1] : photoPresets[0];
+    const entry = job.entries.find((entry) => entry.id === photo.id)!;
     const nextPhoto = {
-      ...photo, id: crypto.randomUUID(), presetId: nextPreset.id, copies: 1,
+      ...entry, id: crypto.randomUUID(), presetId: nextPreset.id, copies: 1,
       cropSettings: initialCrop,
       photo: { widthMm: nextPreset.widthMm, heightMm: nextPreset.heightMm },
     };
@@ -223,7 +232,13 @@ export function QuickPrint() {
   }
 
   return (
-    <div className="workspace">
+    <>
+    <ProjectToolbar studio={studio} busy={loadingPhotos || exporting} onSwitch={(id) => {
+      setCropId(undefined); setEditId(undefined); setRequestedPage(0); setUploadErrors([]); setExportStatus(undefined);
+      void studio.switchProject(id);
+    }} />
+    <fieldset className="workspace workspace-controls" disabled={!studio.ready || studio.transitioning || loadingPhotos || exporting}>
+      <legend className="sr-only">Print layout settings</legend>
       <div className="setup-column">
         <Step number="01" title="Choose a starting size">
           <fieldset className="presets">
@@ -332,8 +347,8 @@ export function QuickPrint() {
                           value={Number.isNaN(photo.copies) ? "" : photo.copies}
                           onChange={(event) => {
                             const copies = event.target.valueAsNumber;
-                            setPhotos((current) => current.map((item) => item.id === photo.id ? { ...item, copies } : item));
-                          }} />
+                            setPhotos((current) => current.map((item) => item.id === photo.id ? { ...item, copies } : item), `copies-${photo.id}`);
+                          }} onBlur={endGroup} />
                       </label>
                       <button type="button" className="icon-button add-size-button" aria-label={`Add another size of ${itemLabel}`}
                         title="Add another size of this photo" disabled={photos.length >= maxLineItems} onClick={() => addAnotherSize(photo)}>
@@ -352,6 +367,8 @@ export function QuickPrint() {
           )}
           {photos.length > 0 && <p className="step-note">Use + to print the same photo in another size.</p>}
           <p className="step-note"><LockKeyhole size={13} aria-hidden /> Photos stay in this browser.</p>
+          <IdPackages key={studio.activeId} job={job} customPackages={studio.customPackages} onSave={studio.savePackage}
+            onApply={(next) => { changeJob(() => next); setRequestedPage(0); setExportStatus(undefined); }} />
         </Step>
 
         <Step number="03" title="Set up your sheet">
@@ -371,11 +388,11 @@ export function QuickPrint() {
             </label>
             <label className="field">
               <span>Margin <small>(mm)</small></span>
-              <input type="number" min={0} step="any" value={margin} onChange={(event) => setMargin(event.target.value)} />
+              <input type="number" min={0} step="any" value={margin} onChange={(event) => setMargin(event.target.value)} onBlur={endGroup} />
             </label>
             <label className="field">
               <span>Gap <small>(mm)</small></span>
-              <input type="number" min={0} step="any" value={gap} onChange={(event) => setGap(event.target.value)} />
+              <input type="number" min={0} step="any" value={gap} onChange={(event) => setGap(event.target.value)} onBlur={endGroup} />
             </label>
           </div>
           <label className="fit-toggle">
@@ -440,6 +457,7 @@ export function QuickPrint() {
           setEditId(undefined);
         }}
       />}
-    </div>
+    </fieldset>
+    </>
   );
 }

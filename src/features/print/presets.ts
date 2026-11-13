@@ -73,3 +73,5 @@ export const paperPresets = [
   { id: "20x30", label: "20 × 30 in", widthMm: 508, heightMm: 762 },
   { id: "24x36", label: "24 × 36 in", widthMm: 609.6, heightMm: 914.4 },
 ] as const;
+
+export type PaperPresetId = typeof paperPresets[number]["id"];

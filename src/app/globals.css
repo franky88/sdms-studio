@@ -72,6 +72,46 @@ a { color: inherit; text-decoration: none; }
 }
 
 .workspace { display: grid; grid-template-columns: minmax(0, 1.16fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.workspace-controls { border: 0; padding: 0; margin: 0; min-width: 0; }
+.project-panel { padding: 16px 18px; margin-bottom: 16px; }
+.project-topline, .project-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.project-title { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.project-title > span { color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .12em; }
+.project-title input { width: 100%; max-width: 440px; height: 31px; border: 0; border-radius: 5px; background: transparent; font: 650 17px var(--body); text-overflow: ellipsis; }
+.project-title input:hover { background: #f4f7fb; }
+.save-status { display: inline-flex; align-items: center; gap: 6px; flex: none; color: #28674f; background: #eef8f2; padding: 6px 9px; border-radius: 999px; font-size: 11px; font-weight: 650; }
+.save-status.has-error { color: #8d2438; background: #fff0f3; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.project-controls { margin-top: 10px; }
+.project-buttons, .history-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.project-buttons .button { min-height: 32px; padding: 5px 11px; font-size: 12px; }
+.project-note { margin: 9px 0 0; color: var(--muted); font-size: 11px; }
+.saved-projects { display: grid; gap: 6px; border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; max-height: 320px; overflow-y: auto; }
+.saved-projects h2 { margin: 0 0 4px; font-size: 13px; font-weight: 700; }
+.saved-projects > p { margin: 0; color: var(--muted); font-size: 12px; }
+.saved-project { display: flex; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: left; background: #f9fbfd; }
+.saved-project:hover { background: #edf7fc; border-color: #92cddd; }
+.saved-project > span { flex: 1; min-width: 0; }
+.saved-project strong, .saved-project small { display: block; overflow-wrap: anywhere; }
+.saved-project strong { font-size: 13px; }
+.saved-project small { font-size: 11px; color: var(--muted); }
+.id-packages { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+.package-heading { display: flex; align-items: center; gap: 7px; color: #66345f; }
+.package-heading h3 { flex: 1; margin: 0; font-size: 13px; font-weight: 700; }
+.package-heading > span { color: #805071; background: #f8edf4; border-radius: 5px; padding: 3px 5px; font-size: 8px; font-weight: 750; letter-spacing: .06em; }
+.package-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 10px; }
+.package-card { display: grid; align-content: start; gap: 4px; padding: 10px 8px; text-align: left; background: #fef9fc; border: 1px solid #eddde8; border-radius: 10px; }
+.package-card:not(:disabled):hover { background: #f8eaf3; border-color: #c884ac; }
+.package-card strong { font-size: 12px; overflow-wrap: anywhere; }
+.package-card span { font-size: 10px; color: #6b5263; }
+.package-card:disabled { opacity: .55; }
+.package-source { margin-top: 10px; }
+.custom-package { margin-top: 12px; font-size: 12px; }
+.custom-package summary { cursor: pointer; color: #075776; font-weight: 650; }
+.custom-package p { color: var(--muted); margin-block: 8px; }
+.custom-package-form { display: flex; align-items: end; gap: 8px; }
+.custom-package-form .field { flex: 1; }
+.custom-package-form .button { min-height: 37px; padding-inline: 11px; border-radius: 9px; font-size: 12px; }
 .setup-column, .preview-column { display: grid; gap: 14px; min-width: 0; }
 .preview-column { position: sticky; top: 16px; }
 .panel { min-width: 0; background: var(--white); border: 1px solid var(--line); border-radius: 21px; box-shadow: 0 4px 12px #17203305; }
@@ -294,6 +334,13 @@ ul.notice { display: grid; padding-left: 26px; list-style: disc; }
   .preset-tile { min-height: 73px; }
 }
 @media (max-width: 700px) {
+  .project-panel { padding: 13px; }
+  .project-topline { align-items: start; gap: 6px; }
+  .project-title input { font-size: 15px; }
+  .save-status { font-size: 10px; padding: 5px 7px; }
+  .project-controls { align-items: end; }
+  .history-buttons { flex-wrap: nowrap; }
+  .project-buttons .button { padding-inline: 8px; }
   .app-shell { width: calc(100% - 28px); }
   .site-header { margin-top: 12px; padding: 8px 9px 8px 11px; min-height: 48px; }
   .brand { gap: 5px; font-size: 12px; }
