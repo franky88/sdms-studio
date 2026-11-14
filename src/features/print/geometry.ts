@@ -6,7 +6,7 @@ export type RectMm = PointMm & SizeMm;
 export type PixelSize = { width: number; height: number };
 export type CropPx = PixelSize & { x: number; y: number };
 export type CropSettings = { zoom: number; horizontal: number; vertical: number };
-export type PhotoPlacement = RectMm & { assetId: string; lineId?: string; crop: CropPx; adjustments?: PhotoAdjustments };
+export type PhotoPlacement = RectMm & { assetId: string; lineId?: string; crop: CropPx; adjustments?: PhotoAdjustments; rotation?: number; id?: string };
 export type PrintPage = SizeMm & { photos: PhotoPlacement[]; marks: [PointMm, PointMm][] };
 export type PrintDocument = { schemaVersion: 1; pages: PrintPage[]; scale?: number };
 export type PhotoLine = PixelSize & {
@@ -59,7 +59,7 @@ export function gridFor({ paper, photo, margin, gap }: PrintSettings) {
   return { columns, rows, capacity: columns * rows };
 }
 
-function cutMarksFor(photo: RectMm, { paper, gap }: PrintSettings): PrintPage["marks"] {
+export function cutMarksFor(photo: RectMm, { paper, gap }: PrintSettings): PrintPage["marks"] {
   const marks: PrintPage["marks"] = [];
   for (const [xMm, dx] of [[photo.xMm, -1], [photo.xMm + photo.widthMm, 1]]) {
     for (const [yMm, dy] of [[photo.yMm, -1], [photo.yMm + photo.heightMm, 1]]) {

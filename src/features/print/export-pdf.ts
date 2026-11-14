@@ -1,4 +1,4 @@
-import { clip, endPath, PDFDocument, type PDFImage, popGraphicsState, pushGraphicsState, rectangle, rgb } from "pdf-lib";
+import { clip, concatTransformationMatrix, endPath, PDFDocument, type PDFImage, popGraphicsState, pushGraphicsState, rectangle, rgb } from "pdf-lib";
 import { mmToPt, type PixelSize, type PrintDocument } from "./geometry";
 import { validateAdjustments } from "./photo-adjustments";
 import { renderAdjustedPhoto } from "./render-adjusted-photo";
@@ -37,7 +37,10 @@ export async function exportPdf(document: PrintDocument, assets: ReadonlyMap<str
       const height = mmToPt(photo.heightMm);
       const scaleX = width / photo.crop.width;
       const scaleY = height / photo.crop.height;
-      page.pushOperators(pushGraphicsState(), rectangle(x, y, width, height), clip(), endPath());
+      const angle = (photo.rotation ?? 0) * Math.PI / 180;
+      const c = Math.cos(angle), s = Math.sin(angle);
+      const cx = x + width / 2, cy = y + height / 2;
+      page.pushOperators(pushGraphicsState(), concatTransformationMatrix(c, -s, s, c, cx - c * cx - s * cy, cy + s * cx - c * cy), rectangle(x, y, width, height), clip(), endPath());
       page.drawImage(image, {
         x: x - photo.crop.x * scaleX,
         y: y + height - (asset.height - photo.crop.y) * scaleY,

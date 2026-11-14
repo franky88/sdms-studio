@@ -22,6 +22,18 @@ Use the trash icon on a custom package and confirm **Delete package** to remove 
 
 ## IndexedDB version 1
 
+### Manual layout and background edits
+
+**Edit layout** above the sheet preview opens a paper editor. Each printed copy can be selected, dragged, rotated, aligned horizontally/vertically, positioned using X/Y in millimeters, or moved to another sheet. Arrow keys move 1 mm, Shift + arrow moves 5 mm. The editor has its own undo/redo and Apply/Cancel; applying is one workspace undo action. Rotated corners stay inside the paper. Deliberate overlaps are allowed. Photo sizes are preserved, including an existing one-sheet fit scale.
+
+Manual positions autosave with the job. Crops, brightness/contrast, cut marks and background edits preserve those positions. Changing paper, orientation, margins, gaps, sizes, order or quantities returns to automatic arrangement; workspace Undo restores the previous manual layout. **Use auto layout** explicitly clears manual positioning. Added empty sheets are intentional printable sheets.
+
+The eraser icon beside each photo opens **Background cleanup**. Pick a backdrop color or use **Remove corner backdrop**, adjust tolerance, and correct the mask with Erase/Restore. This connected-color method works best on plain ID-photo backgrounds; it does not perform AI subject segmentation. The output can be transparent or filled with white, blue, red or a custom color. Apply affects that entry's copies, preserves its crop/effects, and can be undone from the workspace.
+
+Background edits create new full-resolution PNG source assets with an `originalId`, full-resolution alpha-mask Blob and selected background color. Original pixels are never overwritten. Reopening the editor reloads that original and mask so erased edges remain restorable, including after page reload or Save copy. History and persistence keep original dependencies until no active history entry needs them. PNG source dimensions stay unchanged in PDF export.
+
+The schema-version-1 job now accepts an optional `manualLayout` (fit scale and sheets of stable item/entry IDs, mm positions and clockwise rotation). Existing jobs without it retain automatic layout. Asset records accept the optional background fields above; no IndexedDB store migration is required. Geometry and source bytes remain separate from UI object URLs.
+
 Database: `sdms-print-studio`.
 
 | Store | Key | Contents |

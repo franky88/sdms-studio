@@ -2,6 +2,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import { builtinIdPackages, validateIdPackage, type IdPackage } from "./id-packages";
 import { validateStudioJob, type StudioAsset, type StudioJob } from "./job";
 import { maxImagePixels } from "../print/import-photo";
+import { assetDependencies } from "./asset-dependencies";
 
 export type ProjectSummary = {
   id: string;
@@ -28,6 +29,10 @@ function validateAsset(asset: StudioAsset | undefined): StudioAsset {
       !Number.isSafeInteger(asset.width) || !Number.isSafeInteger(asset.height) ||
       asset.width < 1 || asset.height < 1 || asset.width * asset.height > maxImagePixels) {
     throw new Error("A source photo is missing or damaged in this saved project.");
+  }
+  if (asset.originalId !== undefined && (typeof asset.originalId !== "string" || !asset.originalId || asset.originalId === asset.id || !(asset.backgroundMask instanceof Blob) || asset.mime !== "image/png" ||
+      (asset.backgroundColor !== "transparent" && !/^#[0-9a-f]{6}$/i.test(asset.backgroundColor ?? "")))) {
+    throw new Error("A saved background edit is damaged.");
   }
   return asset;
 }
@@ -78,7 +83,12 @@ export function createProjectRepository(name = "sdms-print-studio") {
       const assets = await Promise.all(ids.map((id) => tx.objectStore("assets").get(id)));
       await tx.done;
       const sources = assets.map(validateAsset);
+      const originals = [...new Set(sources.flatMap((source) => source.originalId ? [source.originalId] : []))];
+      // Open a new read transaction: the first one completed before validation.
+      const originalSources = await Promise.all(originals.filter((id) => !ids.includes(id)).map((id) => db.get("assets", id)));
+      sources.push(...originalSources.map(validateAsset));
       const sourceMap = new Map(sources.map((source) => [source.id, source]));
+      assetDependencies(ids, sourceMap);
       if (job.entries.some((entry) => {
         const source = sourceMap.get(entry.assetId);
         return !source || source.width !== entry.width || source.height !== entry.height;
@@ -87,7 +97,7 @@ export function createProjectRepository(name = "sdms-print-studio") {
     },
     async saveProject(id: string, revision: number, input: StudioJob, sources: ReadonlyMap<string, StudioAsset>) {
       const job = validateStudioJob(input);
-      const ids = [...new Set(job.entries.map((entry) => entry.assetId))];
+      const ids = [...assetDependencies(job.entries.map((entry) => entry.assetId), sources)];
       const assets = ids.map((assetId) => validateAsset(sources.get(assetId)));
       if (job.entries.some((entry) => {
         const source = sources.get(entry.assetId);
@@ -102,8 +112,8 @@ export function createProjectRepository(name = "sdms-print-studio") {
         }
         await Promise.all(assets.map(async (asset) => {
           if (await tx.objectStore("assets").getKey(asset.id) !== undefined) return;
-          const { id, width, height, mime, blob, thumbnail } = asset;
-          await tx.objectStore("assets").put({ id, width, height, mime, blob, thumbnail });
+          const { id, width, height, mime, blob, thumbnail, originalId, backgroundMask, backgroundColor } = asset;
+          await tx.objectStore("assets").put({ id, width, height, mime, blob, thumbnail, ...(originalId ? { originalId, backgroundMask, backgroundColor } : {}) });
         }));
         const now = new Date().toISOString();
         const saved: ProjectRecord = {

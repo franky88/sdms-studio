@@ -58,7 +58,7 @@ export function SheetPreview({
           {sheet ? sheet.photos.map((photo, index) => {
             const preview = previews.get(photo.assetId);
             return preview && (
-              <div className="paper-photo" key={index} style={frameStyle(photo, paper)}>
+              <div className="paper-photo" key={index} style={{ ...frameStyle(photo, paper), transform: `rotate(${photo.rotation ?? 0}deg)` }}>
                 <PhotoPreview url={preview.url} source={preview} crop={photo.crop} adjustments={photo.adjustments} />
               </div>
             );

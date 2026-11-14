@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Crop, FileImage, ImagePlus, LockKeyhole, Plus, RotateCw, Scissors, Shrink, SlidersHorizontal, TriangleAlert, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Crop, Eraser, FileImage, ImagePlus, LockKeyhole, Move, Plus, RotateCw, Scissors, Shrink, SlidersHorizontal, TriangleAlert, X } from "lucide-react";
 import {
   buildPrintDocument, effectiveDpi, gridFor, initialCrop, maxCopiesPerPhoto, maxLineItems, sourceCrop,
   type PrintSettings,
@@ -16,6 +16,9 @@ import { PhotoEditDialog } from "./photo-edit-dialog";
 import { SheetPreview } from "./sheet-preview";
 import { ProjectToolbar } from "./project-toolbar";
 import { IdPackages } from "./id-packages";
+import { ManualLayoutDialog } from "./manual-layout-dialog";
+import { BackgroundDialog } from "./background-dialog";
+import { manualPrintDocument } from "@/features/studio/manual-layout";
 
 type Photo = AssetPreview & PhotoEntry;
 type PaperId = typeof paperPresets[number]["id"];
@@ -74,6 +77,8 @@ export function QuickPrint() {
   const [dragging, setDragging] = useState(false);
   const [cropId, setCropId] = useState<string>();
   const [editId, setEditId] = useState<string>();
+  const [backgroundId, setBackgroundId] = useState<string>();
+  const [editingLayout, setEditingLayout] = useState(false);
   const [requestedPage, setRequestedPage] = useState(0);
   const fileInput = useRef<HTMLInputElement>(null);
   const uploading = useRef(false);
@@ -99,7 +104,7 @@ export function QuickPrint() {
   const { document, layoutError, capacity } = useMemo(() => {
     try {
       if (photos.length !== job.entries.length) throw new Error("A source photo is missing. Reopen this project or add the photo again.");
-      const document = buildPrintDocument(settings, job.entries);
+      const document = job.manualLayout ? manualPrintDocument(job, settings, job.manualLayout) : buildPrintDocument(settings, job.entries);
       const frame = photos[0]?.photo ?? preset;
       const scale = document.scale ?? 1;
       return {
@@ -114,7 +119,7 @@ export function QuickPrint() {
         capacity: 0,
       };
     }
-  }, [settings, photos, preset, job.entries]);
+  }, [settings, photos, preset, job]);
   const printScale = document?.scale ?? 1;
   const printScaleLabel = `${scaleFormat.format(printScale * 100)}%`;
 
@@ -132,6 +137,8 @@ export function QuickPrint() {
   }) < 300);
   const currentCrop = photos.find((photo) => photo.id === cropId);
   const currentEdit = photos.find((photo) => photo.id === editId);
+  const currentBackground = photos.find((photo) => photo.id === backgroundId);
+  const backgroundOriginal = currentBackground ? studio.assets.get(currentBackground.originalId ?? currentBackground.assetId) : undefined;
 
   async function addPhotos(files: File[]) {
     if (!files.length || uploading.current) return;
@@ -234,7 +241,7 @@ export function QuickPrint() {
   return (
     <>
     <ProjectToolbar studio={studio} busy={loadingPhotos || exporting} onSwitch={(id) => {
-      setCropId(undefined); setEditId(undefined); setRequestedPage(0); setUploadErrors([]); setExportStatus(undefined);
+      setCropId(undefined); setEditId(undefined); setBackgroundId(undefined); setEditingLayout(false); setRequestedPage(0); setUploadErrors([]); setExportStatus(undefined);
       void studio.switchProject(id);
     }} />
     <fieldset className="workspace workspace-controls" disabled={!studio.ready || studio.transitioning || loadingPhotos || exporting}>
@@ -318,6 +325,7 @@ export function QuickPrint() {
                       </div>
                       <button type="button" className="icon-button" aria-label={`Edit ${itemLabel}`} title="Brightness and contrast" onClick={() => setEditId(photo.id)}><SlidersHorizontal size={16} /></button>
                       <button type="button" className="icon-button" aria-label={`Crop ${itemLabel}`} title="Crop photo" onClick={() => setCropId(photo.id)}><Crop size={16} /></button>
+                      <button type="button" className="icon-button" aria-label={`Background cleanup for ${itemLabel}`} title="Remove or replace background" onClick={() => setBackgroundId(photo.id)}><Eraser size={16} /></button>
                       {photos.length > 1 && (
                         <div className="reorder-buttons">
                           <button type="button" className="icon-button" aria-label={`Move ${itemLabel} up`} disabled={index === 0} onClick={() => movePhoto(index, -1)}><ArrowUp size={13} /></button>
@@ -420,6 +428,11 @@ export function QuickPrint() {
       </div>
 
       <div className="preview-column">
+        <div className="panel layout-actions">
+          <button type="button" className="button secondary" disabled={!document?.pages.length} onClick={() => setEditingLayout(true)}><Move size={15} /> Edit layout</button>
+          {job.manualLayout && <button type="button" className="text-button" onClick={() => changeJob((current) => ({ ...current, manualLayout: undefined }))}>Use auto layout</button>}
+          <p>{job.manualLayout ? "Manual layout saved. Changing paper, sizes, quantities, margins or gaps returns to auto layout." : "Position, rotate and align individual prints directly on the sheet."}</p>
+        </div>
         <SheetPreview
           paper={paper} paperLabel={selectedPaper.label} sheet={document?.pages[pageIndex]}
           placeholders={placeholders} previews={previews} pageIndex={pageIndex} pages={pages}
@@ -457,6 +470,10 @@ export function QuickPrint() {
           setEditId(undefined);
         }}
       />}
+      {editingLayout && document && <ManualLayoutDialog job={job} settings={settings} document={document} assets={studio.assets}
+        onClose={() => setEditingLayout(false)} onSave={(manualLayout) => { changeJob((current) => ({ ...current, manualLayout })); setEditingLayout(false); setRequestedPage(0); }} />}
+      {currentBackground && backgroundOriginal && <BackgroundDialog key={currentBackground.id} source={studio.assets.get(currentBackground.assetId)!} original={backgroundOriginal} name={currentBackground.name} adjustments={currentBackground.adjustments}
+        onClose={() => setBackgroundId(undefined)} onSave={(asset) => { studio.replacePhotoAsset(currentBackground.id, asset); setBackgroundId(undefined); }} />}
     </fieldset>
     </>
   );

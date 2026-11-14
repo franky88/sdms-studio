@@ -5,6 +5,8 @@ import { createHistory, historyAssetIds, historyReducer, type HistoryAction } fr
 import { createStudioJob, type AssetPreview, type PhotoEntry, type StudioAsset, type StudioJob } from "./job";
 import { packageFromPhoto, type IdPackage } from "./id-packages";
 import { projectRepository, type ProjectSummary } from "./project-repository";
+import { reconcileManualLayout } from "./manual-layout";
+import { assetDependencies } from "./asset-dependencies";
 
 function messageFor(error: unknown) {
   if (error instanceof DOMException && error.name === "QuotaExceededError") {
@@ -35,8 +37,8 @@ export function useStudio(busy: boolean) {
     const next = historyReducer(historyRef.current, action);
     historyRef.current = next;
     setHistory(next);
-    const keep = historyAssetIds(next);
     const current = assetsRef.current;
+    const keep = assetDependencies(historyAssetIds(next), current);
     if ([...current.keys()].some((id) => !keep.has(id))) {
       const retained = new Map(current);
       for (const [id, asset] of retained) {
@@ -50,7 +52,8 @@ export function useStudio(busy: boolean) {
   }, []);
 
   const changeJob = useCallback((update: (job: StudioJob) => StudioJob, group?: string) => {
-    dispatch({ type: "change", job: update(historyRef.current.present), group });
+    const current = historyRef.current.present;
+    dispatch({ type: "change", job: reconcileManualLayout(current, update(current)), group });
   }, [dispatch]);
   const endGroup = useCallback(() => dispatch({ type: "end-group" }), [dispatch]);
   const undo = useCallback(() => dispatch({ type: "undo" }), [dispatch]);
@@ -176,6 +179,13 @@ export function useStudio(busy: boolean) {
     changeJob((job) => ({ ...job, entries: [...job.entries, ...entries] }));
   }
 
+  function replacePhotoAsset(entryId: string, source: StudioAsset) {
+    const next = new Map(assetsRef.current);
+    next.set(source.id, { ...source, url: URL.createObjectURL(source.thumbnail) });
+    assetsRef.current = next; setAssets(next);
+    changeJob((job) => ({ ...job, entries: job.entries.map((entry) => entry.id === entryId ? { ...entry, assetId: source.id } : entry) }));
+  }
+
   async function switchProject(id?: string) {
     if (switching.current) return false;
     switching.current = true;
@@ -209,7 +219,8 @@ export function useStudio(busy: boolean) {
       const job = { ...historyRef.current.present, title: `${historyRef.current.present.title.slice(0, 75)} copy` };
       const id = crypto.randomUUID();
       const summary = await projectRepository.saveProject(id, 0, job, assetsRef.current);
-      install(job, [...assetsRef.current.values()].filter((asset) => job.entries.some((entry) => entry.assetId === asset.id)), id, summary.revision);
+      const keep = assetDependencies(job.entries.map((entry) => entry.assetId), assetsRef.current);
+      install(job, [...assetsRef.current.values()].filter((asset) => keep.has(asset.id)), id, summary.revision);
       updateCatalog(summary);
     } catch (error) {
       setSaveError(messageFor(error));
@@ -239,7 +250,7 @@ export function useStudio(busy: boolean) {
     job: history.present, assets, changeJob, endGroup, undo, redo,
     canUndo: history.past.length > 0, canRedo: history.future.length > 0,
     ready, transitioning, saving, saveError, dirty: history.present !== savedJob,
-    activeId, projects, customPackages, addImportedPhotos, switchProject, saveCopy, savePackage, deletePackage, refreshProjects,
+    activeId, projects, customPackages, addImportedPhotos, replacePhotoAsset, switchProject, saveCopy, savePackage, deletePackage, refreshProjects,
     saveNow: () => { void flush(true).catch(() => undefined); },
   };
 }

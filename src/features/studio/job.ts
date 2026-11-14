@@ -2,6 +2,7 @@ import type { PrintAsset } from "../print/export-pdf";
 import { maxLineItems, type PhotoLine, type SizeMm } from "../print/geometry";
 import { validateAdjustments } from "../print/photo-adjustments";
 import { paperPresets, photoPresets, type PaperPresetId, type PhotoPresetId } from "../print/presets";
+import type { ManualLayout } from "./manual-layout";
 
 export type PhotoEntry = PhotoLine & {
   id: string;
@@ -10,7 +11,7 @@ export type PhotoEntry = PhotoLine & {
   photo: SizeMm;
 };
 
-export type StudioAsset = PrintAsset & { id: string; thumbnail: Blob };
+export type StudioAsset = PrintAsset & { id: string; thumbnail: Blob; originalId?: string; backgroundMask?: Blob; backgroundColor?: string };
 export type AssetPreview = StudioAsset & { url: string };
 export type StudioJob = {
   schemaVersion: 1;
@@ -23,6 +24,7 @@ export type StudioJob = {
   cutMarks: boolean;
   fitToOneSheet: boolean;
   entries: PhotoEntry[];
+  manualLayout?: ManualLayout;
 };
 
 export function createStudioJob(): StudioJob {
@@ -99,9 +101,27 @@ export function validateStudioJob(value: unknown): StudioJob {
       adjustments,
     };
   });
+  let manualLayout: ManualLayout | undefined;
+  if (value.manualLayout !== undefined) {
+    record(value.manualLayout);
+    finite(value.manualLayout.scale, Number.MIN_VALUE, 1);
+    if (!Array.isArray(value.manualLayout.pages) || !value.manualLayout.pages.length || value.manualLayout.pages.length > 100) throw new Error("Invalid manual layout sheets.");
+    let count = 0;
+    const itemIds = new Set<string>();
+    manualLayout = { scale: value.manualLayout.scale, pages: value.manualLayout.pages.map((page: unknown) => {
+      if (!Array.isArray(page)) throw new Error("Invalid manual layout sheet.");
+      return page.map((item: unknown) => {
+        record(item); text(item.id, 100); text(item.lineId, 100);
+        finite(item.xMm, -10_000, 10_000); finite(item.yMm, -10_000, 10_000); finite(item.rotation, -180, 180);
+        if (!item.id || itemIds.has(item.id) || !ids.has(item.lineId) || ++count > 100_000) throw new Error("Invalid manual photo reference.");
+        itemIds.add(item.id);
+        return { id: item.id, lineId: item.lineId, xMm: item.xMm, yMm: item.yMm, rotation: item.rotation };
+      });
+    }) };
+  }
   return {
     schemaVersion: 1, title: value.title, presetId: value.presetId as PhotoPresetId, paperId: value.paperId as PaperPresetId,
     landscape: value.landscape, margin: value.margin, gap: value.gap,
-    cutMarks: value.cutMarks, fitToOneSheet: value.fitToOneSheet, entries,
+    cutMarks: value.cutMarks, fitToOneSheet: value.fitToOneSheet, entries, ...(manualLayout ? { manualLayout } : {}),
   };
 }

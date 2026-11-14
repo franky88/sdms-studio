@@ -136,7 +136,7 @@ describe("Local project repository", () => {
 
   it("rejects missing sources before writing any project", async () => {
     const repo = repository();
-    await expect(repo.saveProject("broken", 0, job(), new Map())).rejects.toThrow("missing or damaged");
+    await expect(repo.saveProject("broken", 0, job(), new Map())).rejects.toThrow("missing");
     await expect(repo.saveProject("broken", 0, job(), new Map([[source.id, { ...source, width: 1 }]]))).rejects.toThrow("inconsistent");
     expect(await repo.listProjects()).toEqual([]);
     expect(await repo.lastProjectId()).toBeUndefined();
