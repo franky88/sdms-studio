@@ -92,7 +92,7 @@ export function SheetPreview({
           {exporting ? <LoaderCircle className="spin" size={18} aria-hidden /> : <Download size={18} aria-hidden />}
           {exporting ? "Preparing PDF…" : "Download PDF"}
         </button>
-        <p><Info size={14} aria-hidden /> In your print dialog, choose <strong>Actual size / 100%</strong>.</p>
+        <p><Info size={14} aria-hidden /><span>In your print dialog, choose <strong>Actual size / 100%</strong>.</span></p>
       </div>
     </section>
   );

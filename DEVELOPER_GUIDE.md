@@ -82,6 +82,18 @@ Use the sliders button beside a photo to edit brightness and contrast. The dialo
 
 Adjustment values are optional document metadata, with zero as the neutral default. Preview filters and export use the same brightness-then-contrast transformation. Edited exports process the normalized source at its full pixel dimensions and encode a lossless PNG. The PDF cache keys include the source ID and both adjustment values so differently edited copies stay independent. Original source blobs remain available for resetting.
 
+### Studio brand identity
+
+The studio follows **SDMS Brand Guidelines v1.0 (November 2026)**. Shared colors and type are defined in `src/app/globals.css`:
+
+- Midnight navy `#102A43` for text, headings, and selected size tiles.
+- Deep teal `#006F73` for primary actions, links, and focus indicators.
+- Bright mint `#14B8A6` and warm gold `#FFCC66` for focused decorative highlights.
+- Cloud white `#F7FAF9` for the app background, with white panels and pale teal surfaces.
+- Locally bundled Lato Regular (400), Bold (700), and Heavy (900), imported in `src/app/layout.tsx`. Body text starts at 16px; secondary metadata uses a smaller scale.
+
+Keep `public/sdms.svg` in its original proportions and colors. Brand styling applies to the app interface; photo backgrounds, cut marks, physical dimensions, and generated print artwork have their own settings.
+
 ### Prerequisites
 
 - Recent supported Node.js (Next.js documentation lists **20.9+ minimum**; use a maintained LTS compatible with your chosen packages).
